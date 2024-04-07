@@ -1,5 +1,8 @@
+import json
 import requests
 import base64
+from bs4 import BeautifulSoup
+import re
 
 def get_jwt():
     """fetch the jwt token object"""
@@ -29,6 +32,7 @@ def search(jwt, what, where):
         ('pav', 'true'),
         ('size', '100'),
         ('umkreis', '200'),
+        ('zeitarbeit', 'false'),
         ('was', what),
         ('wo', where),
     )
@@ -44,31 +48,55 @@ def search(jwt, what, where):
                             headers=headers, params=params, verify=True)
     return response.json()
 
-def get_job(jwt, refnr):
-    """fetch job details"""
-    
-    headers = {
-        'User-Agent': 'Jobsuche/2.9.2 (de.arbeitsagentur.jobboerse; build:1077; iOS 15.1.0) Alamofire/5.4.4',
-        'Host': 'rest.arbeitsagentur.de',
-        'OAuthAccessToken': jwt,
-        'Connection': 'keep-alive',
-    }
-
-    response = requests.get(f'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/app/jobs/{refnr}',
-                            headers=headers, verify=True)
-    return response.json()
-
 def output_jobs(jobs):
     """print job details"""
     for job in jobs['stellenangebote']:
         print(job)
 
+def find_emails(url):
+    """Find all email addresses on a webpage"""
+    # Send a GET request to the URL
+    response = requests.get(url)
+    # Parse the HTML content of the page
+    soup = BeautifulSoup(response.text, 'html.parser')
+    # Regular expression to match email addresses
+    email_regex = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+    # Find all strings in the page that match the regular expression
+    emails = set(re.findall(email_regex, soup.get_text()))
+    return emails
+
+def get_externe_urls(jobs):
+    """Get all externeUrls from the jobs"""
+    urls = []
+    for job in jobs.get('stellenangebote', []):
+        if 'externeUrl' in job:
+            urls.append(job['externeUrl'])
+    return urls
+
+def dump_emails(jobs):
+    """Find emails in job descriptions and save them to a JSON file."""
+    externe_urls = get_externe_urls(jobs)
+    email_data = {}
+
+    # Iterate over all external URLs and find emails on each page
+    for url in externe_urls:
+        emails = find_emails(url)  
+        print(f"Found {len(emails)} emails on {url}")
+        for email in emails:
+            print(email)
+        email_data[url] = list(emails)
+
+    # Save all emails and their corresponding URLs to a JSON file
+    with open('emails.json', 'w') as f:
+        json.dump(email_data, f, indent=4)
+
 if __name__ == "__main__":
     jwt = get_jwt()
-    result = search(jwt["access_token"], "", "berlin")
+    result = search(jwt["access_token"], "Softwareentwickler", "berlin")
     # Dump jobs to dump.json
     with open('dump.json', 'w', encoding='utf-8') as f:
         f.write(str(result))
     # Output jobs
     output_jobs(result)
     print('Received ' + str(len(result['stellenangebote'])) + ' jobs.')
+    dump_emails(result)
