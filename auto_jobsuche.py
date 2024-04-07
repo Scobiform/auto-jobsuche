@@ -102,11 +102,10 @@ def dump_offeror(jobs):
 if __name__ == "__main__":
     jwt = get_jwt()
     result = search(jwt["access_token"], "Softwareentwickler", "berlin", "200")
-    # Dump jobs to dump.json
-    with open('dump.json', 'w', encoding='utf-8') as f:
-        f.write(str(result))
     # Output jobs
     output_jobs(result)
     print('Received ' + str(len(result['stellenangebote'])) + ' jobs.')
+    # Dump emails
     dump_emails(result)
+    # Dump offeror details
     dump_offeror(result)
