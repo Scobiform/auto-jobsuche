@@ -23,14 +23,14 @@ def get_jwt():
 
     return response.json()
 
-def search(jwt, what, where):
+def search(jwt, what, where, size):
     """search for jobs. params can be found here: https://jobsuche.api.bund.dev/"""
 
     params = (
         ('angebotsart', '1'),
         ('page', '1'),
         ('pav', 'true'),
-        ('size', '100'),
+        ('size', size),
         ('umkreis', '200'),
         ('zeitarbeit', 'false'),
         ('was', what),
@@ -92,7 +92,7 @@ def dump_emails(jobs):
 
 if __name__ == "__main__":
     jwt = get_jwt()
-    result = search(jwt["access_token"], "Softwareentwickler", "berlin")
+    result = search(jwt["access_token"], "Softwareentwickler", "berlin", "200")
     # Dump jobs to dump.json
     with open('dump.json', 'w', encoding='utf-8') as f:
         f.write(str(result))
