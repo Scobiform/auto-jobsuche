@@ -33,6 +33,7 @@ def search(jwt, what, where, size):
         ('size', size),
         ('umkreis', '200'),
         ('zeitarbeit', 'false'),
+        ('veroeffentlichtseite', '100'),
         ('was', what),
         ('wo', where),
     )
@@ -90,6 +91,14 @@ def dump_emails(jobs):
     with open('emails.json', 'w') as f:
         json.dump(email_data, f, indent=4)
 
+def dump_employer(jobs):
+    """Dump employer details to a JSON file"""
+    employer_data = {}
+    for job in jobs.get('stellenangebote', []):
+        employer_data[job['id']] = job['arbeitgeber']
+    with open('employers.json', 'w') as f:
+        json.dump(employer_data, f, indent=4 )
+
 if __name__ == "__main__":
     jwt = get_jwt()
     result = search(jwt["access_token"], "Softwareentwickler", "berlin", "200")
@@ -100,3 +109,4 @@ if __name__ == "__main__":
     output_jobs(result)
     print('Received ' + str(len(result['stellenangebote'])) + ' jobs.')
     dump_emails(result)
+    dump_employer(result)
