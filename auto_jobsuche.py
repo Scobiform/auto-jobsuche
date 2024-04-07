@@ -91,13 +91,13 @@ def dump_emails(jobs):
     with open('emails.json', 'w') as f:
         json.dump(email_data, f, indent=4)
 
-def dump_employer(jobs):
+def dump_offeror(jobs):
     """Dump employer details to a JSON file"""
-    employer_data = {}
+    offeror_data = {}
     for job in jobs.get('stellenangebote', []):
-        employer_data[job['id']] = job['arbeitgeber']
-    with open('employers.json', 'w') as f:
-        json.dump(employer_data, f, indent=4 )
+        offeror_data[job['refnr']] = job['arbeitgeber']
+    with open('refnr_offeror.json', 'w') as f:
+        json.dump(offeror_data, f, indent=4 )
 
 if __name__ == "__main__":
     jwt = get_jwt()
@@ -109,4 +109,4 @@ if __name__ == "__main__":
     output_jobs(result)
     print('Received ' + str(len(result['stellenangebote'])) + ' jobs.')
     dump_emails(result)
-    dump_employer(result)
+    dump_offeror(result)
