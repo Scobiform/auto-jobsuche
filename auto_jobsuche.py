@@ -1,8 +1,19 @@
 import json
+import os
 import requests
 import base64
 from bs4 import BeautifulSoup
 import re
+
+# List of job titles to search for
+berufe = ['Softwareentwickler',
+        'Anwendungsentwickler',
+        'Webentwickler',
+        'Developer'
+        ]
+
+# Where
+where = 'Berlin'
 
 def get_jwt():
     """fetch the jwt token object"""
@@ -49,11 +60,6 @@ def search(jwt, what, where, size):
                             headers=headers, params=params, verify=True)
     return response.json()
 
-def output_jobs(jobs):
-    """print job details"""
-    for job in jobs['stellenangebote']:
-        print(job)
-
 def find_emails(url):
     """Find all email addresses on a webpage"""
     # Send a GET request to the URL
@@ -89,33 +95,48 @@ def dump_emails(jobs):
                 f.write(email + '\n')
 
 def dump_offeror(jobs):
-    """Dump employer details to a JSON file"""
+    """Dump employer details to a JSON file, adding only new refnr entries."""
+    
+    # Attempt to load existing data from the file
     offeror_data = {}
+    filename = 'refnr_offeror.json'
+    if os.path.exists(filename):
+        with open(filename, 'r', encoding='utf-8') as f:
+            offeror_data = json.load(f)
+
+    # Process new jobs and add them if refnr is not already in the file
     for job in jobs.get('stellenangebote', []):
-        offeror_data[job['refnr']] = {
-            'arbeitgeber': job['arbeitgeber'],
-            'beruf': job['beruf'],
-            'arbeitsort': job['arbeitsort']['ort']
-        }
-    with open('refnr_offeror.json', 'w', encoding='utf-8') as f:
-        json.dump(offeror_data, f, indent=4 )
+        refnr = job['refnr']
+        if refnr not in offeror_data:
+            offeror_data[refnr] = {
+                'arbeitgeber': job['arbeitgeber'],
+                'beruf': job['beruf'],
+                'arbeitsort': job['arbeitsort']['ort']
+            }
 
-# Frontend
+    # Save the updated data back to the file
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(offeror_data, f, indent=4)
 
-# SMTP server
-        
-# Email credentials
-        
-# Application mail template
+def distinct_emails():
+    """Remove duplicate emails from the file"""
+    with open('emails.txt', 'r', encoding='utf-8') as f:
+        emails = set(f.readlines())
+    with open('emails.txt', 'w', encoding='utf-8') as f:
+        f.writelines(emails)
 
+def search_for_berufe(jwt, where, size):
+    """Search for a list of job titles"""
+    result = {}
+    for beruf in berufe:
+        result[beruf] = search(jwt["access_token"], beruf, where, size)
+        # Output jobs
+        print('Received ' + str(len(result[beruf]['stellenangebote'])) + ' jobs.')
+        dump_emails(result[beruf])
+        dump_offeror(result[beruf])
+    return result
 
 if __name__ == "__main__":
     jwt = get_jwt()
-    result = search(jwt["access_token"], "Softwareentwickler", "berlin", "200")
-    # Output jobs
-    output_jobs(result)
-    print('Received ' + str(len(result['stellenangebote'])) + ' jobs.')
-    # Dump emails
-    dump_emails(result)
-    # Dump offeror details
-    dump_offeror(result)
+    result = search_for_berufe(jwt, where, 200)
+    distinct_emails()
