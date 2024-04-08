@@ -75,29 +75,39 @@ def get_externe_urls(jobs):
     return urls
 
 def dump_emails(jobs):
-    """Find emails in job descriptions and save them to a JSON file."""
+    """Find emails in job descriptions and append them to a text file."""
     externe_urls = get_externe_urls(jobs)
-    email_data = {}
-
-    # Iterate over all external URLs and find emails on each page
-    for url in externe_urls:
-        emails = find_emails(url)  
-        print(f"Found {len(emails)} emails on {url}")
-        for email in emails:
-            print(email)
-        email_data[url] = list(emails)
-
-    # Save all emails and their corresponding URLs to a JSON file
-    with open('emails.json', 'w') as f:
-        json.dump(email_data, f, indent=4)
+    
+    # Open or create the file before iterating over URLs
+    with open('emails.txt', 'a', encoding='utf-8') as f:
+        for url in externe_urls:
+            emails = find_emails(url)  
+            print(f"Found {len(emails)} emails on {url}")
+            for email in emails:
+                print(email)
+                # Append each found email to the file
+                f.write(email + '\n')
 
 def dump_offeror(jobs):
     """Dump employer details to a JSON file"""
     offeror_data = {}
     for job in jobs.get('stellenangebote', []):
-        offeror_data[job['refnr']] = job['arbeitgeber']
-    with open('refnr_offeror.json', 'w') as f:
+        offeror_data[job['refnr']] = {
+            'arbeitgeber': job['arbeitgeber'],
+            'beruf': job['beruf'],
+            'arbeitsort': job['arbeitsort']['ort']
+        }
+    with open('refnr_offeror.json', 'w', encoding='utf-8') as f:
         json.dump(offeror_data, f, indent=4 )
+
+# Frontend
+
+# SMTP server
+        
+# Email credentials
+        
+# Application mail template
+
 
 if __name__ == "__main__":
     jwt = get_jwt()
