@@ -15,6 +15,9 @@ berufe = ['Softwareentwickler',
 # Where
 where = 'Berlin'
 
+# How many jobs per page to fetch
+size = 200
+
 def get_jwt():
     """fetch the jwt token object"""
     headers = {
@@ -138,5 +141,5 @@ def search_for_berufe(jwt, where, size):
 
 if __name__ == "__main__":
     jwt = get_jwt()
-    result = search_for_berufe(jwt, where, 200)
+    result = search_for_berufe(jwt, where, size)
     distinct_emails()
